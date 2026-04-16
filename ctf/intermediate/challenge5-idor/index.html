@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirNova — Booking Confirmation</title>
+<style>
+  body { background:#0a0f1e; color:#f5f3ee; font-family:sans-serif; padding:40px; max-width:800px; margin:0 auto; }
+  h1 { color:#c9a84c; margin-bottom:6px; }
+  p { color:#8a95a8; line-height:1.7; }
+  .card { background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:24px; margin-top:24px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:16px; }
+  .field { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; }
+  .field:last-child { border-bottom:none; }
+  .field .lbl { color:#8a95a8; }
+  .field .val { font-weight:500; }
+  .url-bar { background:#0a0f1e; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:12px 16px; font-family:monospace; font-size:13px; color:#8a95a8; margin:20px 0; display:flex; align-items:center; gap:10px; }
+  .url-input { background:transparent; border:none; color:#c9a84c; font-family:monospace; font-size:13px; outline:none; flex:1; }
+  .btn-go { background:#c9a84c; color:#0a0f1e; border:none; padding:6px 16px; border-radius:4px; font-weight:700; font-size:12px; cursor:pointer; }
+  .hint { margin-top:24px; background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:20px 24px; font-size:13px; }
+  .hint p { font-size:13px; margin-top:8px; }
+  code { color:#c9a84c; background:rgba(201,168,76,0.1); padding:2px 6px; border-radius:3px; }
+  .flag { background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; padding:14px 18px; margin-top:16px; display:none; font-size:13px; color:#3ecf8e; font-family:monospace; }
+  .flag.show { display:block; }
+  .sensitive { color:#e05252; }
+</style>
+</head>
+<body>
+
+<h1>Challenge 5 — IDOR: Insecure Direct Object Reference</h1>
+<p>You just booked a flight. AirNova sends you to this confirmation URL:</p>
+
+<div class="url-bar">
+  <span style="color:#5a6478">https://airnova.com/booking/confirmation?id=</span>
+  <input class="url-input" type="number" id="booking-id" value="1042" min="1" max="1100" />
+  <button class="btn-go" onclick="loadBooking()">Go</button>
+</div>
+
+<div id="booking-display"></div>
+
+<div class="hint">
+  <strong style="color:#f5f3ee">Your mission — IDOR</strong>
+  <p>The server returns booking data based on the <code>id=</code> parameter in the URL. It never checks if the logged-in user actually owns that booking.</p>
+  <p>Change the booking ID in the URL bar above and find booking <strong style="color:#f5f3ee">#1038</strong> — it belongs to another passenger and contains the flag.</p>
+  <p style="margin-top:10px;color:#5a6478">In a real system this would expose real passenger names, passport numbers, payment info, and travel plans.</p>
+</div>
+
+<div class="flag" id="flag-box">FLAG{1d0r_n0_4uthor1z4t10n_ch3ck} — You accessed another passenger's booking without authorization. This is IDOR (Insecure Direct Object Reference) — one of the most common and impactful web vulnerabilities. The fix: always verify server-side that the requesting user owns the resource.</div>
+
+<script>
+const bookings = {
+  1038: { ref:'AN-XK9P2M', name:'Fatima Zahra Oukaci', passport:'AB7723891', route:'ALG → CDG', date:'14 Apr 2026', seat:'12A', email:'f.oukaci@gmail.com', flag:true },
+  1039: { ref:'AN-BT4R7Q', name:'Karim Beloufa',       passport:'CD4412038', route:'ALG → LHR', date:'15 Apr 2026', seat:'24C', email:'k.beloufa@yahoo.fr' },
+  1040: { ref:'AN-MN8V3Z', name:'Sara Amrani',         passport:'EF9923341', route:'ORN → CDG', date:'16 Apr 2026', seat:'8B',  email:'s.amrani@hotmail.com' },
+  1041: { ref:'AN-LQ2D5F', name:'Youcef Tlemcani',     passport:'GH1165872', route:'ALG → AMS', date:'17 Apr 2026', seat:'31F', email:'y.tlemcani@gmail.com' },
+  1042: { ref:'AN-WA6J1N', name:'Mohamed Attacker',    passport:'IJ5534920', route:'ALG → CDG', date:'14 Apr 2026', seat:'19D', email:'demo@airnova.com' },
+  1043: { ref:'AN-PR9C8H', name:'Amina Khelifi',       passport:'KL8847563', route:'ALG → FCO', date:'18 Apr 2026', seat:'6A',  email:'a.khelifi@gmail.com' },
+};
+
+function loadBooking() {
+  const id = parseInt(document.getElementById('booking-id').value);
+  const display = document.getElementById('booking-display');
+  const flagBox = document.getElementById('flag-box');
+  const b = bookings[id];
+
+  if (!b) {
+    display.innerHTML = '<div class="card"><p style="color:#e05252;font-size:14px">Booking #' + id + ' not found.</p></div>';
+    flagBox.classList.remove('show');
+    return;
+  }
+
+  display.innerHTML = `
+    <div class="card">
+      <h2>Booking #${id} — ${b.ref}</h2>
+      <div class="field"><span class="lbl">Passenger</span><span class="val ${b.flag ? 'sensitive' : ''}">${b.name}</span></div>
+      <div class="field"><span class="lbl">Passport</span><span class="val ${b.flag ? 'sensitive' : ''}">${b.passport}</span></div>
+      <div class="field"><span class="lbl">Route</span><span class="val">${b.route}</span></div>
+      <div class="field"><span class="lbl">Travel date</span><span class="val">${b.date}</span></div>
+      <div class="field"><span class="lbl">Seat</span><span class="val">${b.seat}</span></div>
+      <div class="field"><span class="lbl">Email</span><span class="val ${b.flag ? 'sensitive' : ''}">${b.email}</span></div>
+    </div>`;
+
+  if (b.flag) flagBox.classList.add('show');
+  else flagBox.classList.remove('show');
+}
+
+loadBooking();
+</script>
+
+</body>
+</html>

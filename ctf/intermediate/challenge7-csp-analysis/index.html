@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirNova — Challenge 7: CSP Analysis</title>
+<style>
+  body { background:#0a0f1e; color:#f5f3ee; font-family:sans-serif; padding:40px; max-width:860px; margin:0 auto; }
+  h1 { color:#c9a84c; margin-bottom:6px; }
+  p { color:#8a95a8; line-height:1.7; }
+  .card { background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:24px; margin:20px 0; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:14px; }
+  .http-header { font-family:monospace; font-size:13px; background:rgba(255,255,255,0.04); padding:16px; border-radius:6px; line-height:1.9; color:#c0c8d8; }
+  .key { color:#7fb5ff; }
+  .val { color:#f5f3ee; }
+  .bad { color:#e05252; text-decoration:underline; }
+  .good { color:#3ecf8e; }
+  .question { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:20px 24px; margin:16px 0; }
+  .question p { font-size:14px; margin-bottom:10px; color:#f5f3ee; }
+  .options { display:flex; flex-direction:column; gap:8px; }
+  .opt { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px 16px; font-size:13px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:10px; }
+  .opt:hover { border-color:#c9a84c; }
+  .opt.correct { background:rgba(62,207,142,0.1); border-color:#3ecf8e; color:#3ecf8e; }
+  .opt.wrong { background:rgba(224,82,82,0.1); border-color:#e05252; color:#e05252; }
+  .explanation { margin-top:12px; font-size:13px; color:#8a95a8; padding:12px 16px; background:rgba(255,255,255,0.03); border-radius:6px; display:none; }
+  .explanation.show { display:block; }
+  code { color:#c9a84c; background:rgba(201,168,76,0.1); padding:2px 6px; border-radius:3px; }
+  .flag-box { background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:8px; padding:16px 20px; margin-top:16px; font-family:monospace; font-size:13px; color:#3ecf8e; display:none; }
+  .flag-box.show { display:block; }
+  .score-counter { font-size:13px; color:#8a95a8; margin-top:8px; }
+  .diff-badge { display:inline-block; background:rgba(224,82,82,0.15); border:1px solid #e05252; color:#e05252; font-size:11px; padding:2px 8px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<h1>Challenge 7 — CSP: The Defence That Would Have Stopped It <span class="diff-badge">Intermediate</span></h1>
+<p>British Airways had no Content Security Policy. A single correctly configured header would have blocked the entire Magecart attack. In this challenge you analyse HTTP headers and identify what's wrong — and what the fix is.</p>
+
+<div class="card">
+  <h2>AirNova HTTP response headers (before the attack)</h2>
+  <div class="http-header">
+<span class="key">HTTP/1.1 200 OK</span><br>
+<span class="key">Content-Type:</span> <span class="val">text/html; charset=utf-8</span><br>
+<span class="key">Server:</span> <span class="val">nginx/1.18.0</span><br>
+<span class="key">X-Powered-By:</span> <span class="val bad">Express</span><br>
+<span class="key">Access-Control-Allow-Origin:</span> <span class="val bad">*</span><br>
+<span class="key">Set-Cookie:</span> <span class="val bad">session=eyJhbGc...; Path=/</span><br>
+<span class="key">X-Frame-Options:</span> <span class="val">SAMEORIGIN</span><br>
+  </div>
+  <p style="font-size:12px;margin-top:10px;color:#5a6478">Red underlines = problems. Count them — there are 3 issues visible here, and one critical header is completely missing.</p>
+</div>
+
+<!-- Q1 -->
+<div class="question" id="q1">
+  <p><strong>Q1.</strong> The <code>Access-Control-Allow-Origin: *</code> header means...</p>
+  <div class="options">
+    <div class="opt" onclick="answer(1,'a')">a) Only airnova.com can read responses from this server</div>
+    <div class="opt" onclick="answer(1,'b')">b) Any website on the internet can make cross-origin requests and read the responses</div>
+    <div class="opt" onclick="answer(1,'c')">c) The server blocks all cross-origin requests</div>
+    <div class="opt" onclick="answer(1,'d')">d) SSL encryption is enabled</div>
+  </div>
+  <div class="explanation" id="exp1">CORS wildcard (<code>*</code>) tells the browser to allow any origin to read responses — including attacker-controlled pages. If a user visits evil.com while logged into AirNova, that page can make authenticated requests to airnova.com and read the result. Fix: <code>Access-Control-Allow-Origin: https://airnova.com</code></div>
+</div>
+
+<!-- Q2 -->
+<div class="question" id="q2">
+  <p><strong>Q2.</strong> The <code>Set-Cookie</code> header is missing the <code>HttpOnly</code> flag. What does this allow an attacker to do?</p>
+  <div class="options">
+    <div class="opt" onclick="answer(2,'a')">a) Nothing — cookies are always safe</div>
+    <div class="opt" onclick="answer(2,'b')">b) Read the session cookie via JavaScript: <code>document.cookie</code></div>
+    <div class="opt" onclick="answer(2,'c')">c) Delete the user's account</div>
+    <div class="opt" onclick="answer(2,'d')">d) Bypass HTTPS</div>
+  </div>
+  <div class="explanation" id="exp2">Without <code>HttpOnly</code>, any JavaScript on the page — including an injected XSS payload — can read <code>document.cookie</code> and steal the session token. Fix: <code>Set-Cookie: session=...; HttpOnly; Secure; SameSite=Strict</code></div>
+</div>
+
+<!-- Q3 -->
+<div class="question" id="q3">
+  <p><strong>Q3.</strong> Which header, if added, would have directly blocked the Magecart skimmer from sending stolen card data to an external server?</p>
+  <div class="options">
+    <div class="opt" onclick="answer(3,'a')">a) <code>X-Frame-Options: DENY</code></div>
+    <div class="opt" onclick="answer(3,'b')">b) <code>Strict-Transport-Security: max-age=31536000</code></div>
+    <div class="opt" onclick="answer(3,'c')">c) <code>Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:</code></div>
+    <div class="opt" onclick="answer(3,'d')">d) <code>X-Content-Type-Options: nosniff</code></div>
+  </div>
+  <div class="explanation" id="exp3">CSP <code>connect-src 'self'</code> blocks fetch/XHR to external domains. <code>img-src 'self' data:</code> blocks the Image() exfiltration trick Magecart used. Together they would have prevented the stolen card data from ever leaving the browser — even with the skimmer injected. This single header was the £20 million fix.</div>
+</div>
+
+<div class="flag-box" id="flag-final">
+  FLAG{csp_w0uld_h4v3_st0pp3d_1t} — All 3 correct. You now understand the defence that British Airways didn't have. In your own projects: always set CSP, HttpOnly cookies, and a restricted CORS policy before going to production.
+</div>
+
+<div class="score-counter" id="score-display">Score: 0 / 3</div>
+
+<script>
+const answers = { 1:'b', 2:'b', 3:'c' };
+const scores  = { 1:false, 2:false, 3:false };
+
+function answer(q, choice) {
+  const qEl  = document.getElementById('q' + q);
+  const opts  = qEl.querySelectorAll('.opt');
+  const expEl = document.getElementById('exp' + q);
+
+  opts.forEach((o, i) => {
+    const letter = String.fromCharCode(97 + i);
+    if (letter === answers[q]) o.classList.add('correct');
+    else if (letter === choice && choice !== answers[q]) o.classList.add('wrong');
+  });
+
+  expEl.classList.add('show');
+  scores[q] = (choice === answers[q]);
+
+  const total = Object.values(scores).filter(Boolean).length;
+  document.getElementById('score-display').textContent = 'Score: ' + total + ' / 3';
+  if (total === 3) document.getElementById('flag-final').classList.add('show');
+}
+</script>
+
+</body>
+</html>

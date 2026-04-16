@@ -1,0 +1,7 @@
+# Never push these to GitHub
+ctf/PRESENTER_ANSWERS.md
+ctf/workshop_access.log
+*.log
+__pycache__/
+*.pyc
+.env

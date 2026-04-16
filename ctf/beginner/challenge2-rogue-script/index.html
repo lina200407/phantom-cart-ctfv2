@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirNova — Flight Status</title>
+<!-- Legitimate third-party scripts -->
+<script src="https://cdn.airnova.com/analytics/v3.js"></script>
+<script src="https://cdn.airnova.com/ui/components.js"></script>
+<script src="https://cdn.static-assets.net/jquery/3.6.0/jquery.min.js"></script>
+<!-- Payment provider -->
+<script src="https://pay.securepay-global.com/sdk/v2.js"></script>
+<!-- Tracking -->
+<script src="https://cdn.airnova.com/tracking/pixel.js"></script>
+<script src="https://cdn.airnova-static.net/forms/autofill.js"></script>
+<style>
+  body { background:#0a0f1e; color:#f5f3ee; font-family:sans-serif; padding:40px; max-width:800px; margin:0 auto; }
+  h1 { color:#c9a84c; margin-bottom:8px; }
+  p { color:#8a95a8; line-height:1.7; }
+  .script-list { margin-top:24px; background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:24px; }
+  .script-list h2 { font-size:14px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:16px; }
+  .script-item { font-size:13px; font-family:monospace; padding:8px 12px; border-radius:4px; margin-bottom:6px; color:#8a95a8; background:rgba(255,255,255,0.03); }
+  .hint { margin-top:24px; background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:20px 24px; font-size:13px; }
+  code { color:#c9a84c; background:rgba(201,168,76,0.1); padding:2px 6px; border-radius:3px; }
+</style>
+</head>
+<body>
+  <h1>AirNova — Flight Status Page</h1>
+  <p>This page loads several third-party scripts. One of them does not belong to AirNova or any legitimate vendor.</p>
+
+  <div class="script-list">
+    <h2>Scripts loaded by this page (check the source)</h2>
+    <div class="script-item">cdn.airnova.com/analytics/v3.js</div>
+    <div class="script-item">cdn.airnova.com/ui/components.js</div>
+    <div class="script-item">cdn.static-assets.net/jquery/3.6.0/jquery.min.js</div>
+    <div class="script-item">pay.securepay-global.com/sdk/v2.js</div>
+    <div class="script-item">cdn.airnova.com/tracking/pixel.js</div>
+    <div class="script-item">cdn.airnova-static.net/forms/autofill.js</div>
+  </div>
+
+  <div class="hint">
+    <strong style="color:#f5f3ee">Challenge 2 — The Rogue Script</strong>
+    <p style="margin-top:8px">One of the six scripts listed above comes from a domain controlled by an attacker, not by AirNova. Look carefully — the attacker registered a domain that <em>looks</em> like a legitimate AirNova domain but has a subtle difference.</p>
+    <p style="margin-top:8px">When you find it, the flag is: <code>FLAG{supp1y_ch41n_0wn3d}</code></p>
+    <p style="margin-top:8px">Discuss: why is it hard for the browser to tell the difference between a real and a fake domain?</p>
+  </div>
+</body>
+</html>
+
+<!--
+  ANSWER KEY (for presenter only):
+  The rogue script is: cdn.airnova-static.net/forms/autofill.js
+  Domain: airnova-static.net (NOT airnova.com)
+  The attacker registered airnova-static.net — looks similar but is a completely different domain.
+  This is exactly how Magecart worked against British Airways.
+-->

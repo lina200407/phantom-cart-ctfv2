@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation Phantom Cart — CTF Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0a0f1e; --mid:#121929; --light:#1e2a45;
+    --gold:#c9a84c; --gold2:#e8c870;
+    --white:#f5f3ee; --muted:#8a95a8; --border:rgba(255,255,255,0.07);
+    --red:#e05252; --green:#3ecf8e; --purple:#a855c8;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--navy); color:var(--white); font-family:'DM Sans',sans-serif; min-height:100vh; }
+
+  /* header */
+  header { border-bottom:1px solid var(--border); padding:0 48px; height:60px; display:flex; align-items:center; justify-content:space-between; }
+  .logo { font-family:'Playfair Display',serif; color:var(--gold); font-size:18px; }
+  .logo span { color:var(--muted); font-size:13px; font-family:'DM Sans',sans-serif; font-weight:400; margin-left:10px; }
+  .timer { font-family:'DM Mono',monospace; font-size:20px; color:var(--white); letter-spacing:2px; }
+  .timer-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; text-align:right; }
+
+  /* hero */
+  .hero { text-align:center; padding:56px 48px 40px; border-bottom:1px solid var(--border); }
+  .op-label { font-size:11px; text-transform:uppercase; letter-spacing:3px; color:var(--gold); margin-bottom:12px; }
+  h1 { font-family:'Playfair Display',serif; font-size:40px; line-height:1.1; margin-bottom:12px; }
+  .hero-sub { color:var(--muted); font-size:15px; max-width:560px; margin:0 auto; line-height:1.7; }
+  .status-bar { display:flex; justify-content:center; gap:40px; margin-top:28px; }
+  .stat { text-align:center; }
+  .stat-val { font-size:26px; font-weight:500; color:var(--gold); }
+  .stat-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-top:2px; }
+
+  /* main */
+  .main { max-width:1040px; margin:0 auto; padding:40px 48px; }
+  .section-label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:16px; display:flex; align-items:center; gap:12px; }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* challenge grid */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; margin-bottom:40px; }
+
+  .ch-card { background:var(--mid); border:1px solid var(--border); border-radius:10px; padding:20px 22px; cursor:pointer; transition:border-color 0.2s, transform 0.15s; text-decoration:none; color:inherit; display:block; position:relative; overflow:hidden; }
+  .ch-card:hover { border-color:rgba(201,168,76,0.4); transform:translateY(-2px); }
+  .ch-card.solved { border-color:rgba(62,207,142,0.35); }
+  .ch-card.solved::after { content:'SOLVED'; position:absolute; top:14px; right:14px; font-size:10px; letter-spacing:1px; color:var(--green); background:rgba(62,207,142,0.1); border:1px solid rgba(62,207,142,0.3); padding:2px 8px; border-radius:20px; font-weight:600; }
+
+  .ch-num { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .ch-title { font-size:15px; font-weight:500; margin-bottom:6px; }
+  .ch-desc { font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:14px; }
+  .ch-footer { display:flex; align-items:center; justify-content:space-between; }
+
+  .diff { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:500; }
+  .diff-b { background:rgba(62,207,142,0.12); color:var(--green); }
+  .diff-i { background:rgba(224,82,82,0.12);  color:var(--red); }
+  .diff-a { background:rgba(168,85,200,0.15); color:var(--purple); }
+
+  .pts { font-family:'DM Mono',monospace; font-size:13px; color:var(--gold); }
+
+  /* scoreboard */
+  .scoreboard { background:var(--mid); border:1px solid var(--border); border-radius:10px; padding:24px; }
+  .score-row { display:flex; align-items:center; gap:16px; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .score-row:last-child { border-bottom:none; }
+  .rank { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); width:28px; }
+  .rank-1 { color:var(--gold); }
+  .score-name { flex:1; font-weight:500; }
+  .score-pts { font-family:'DM Mono',monospace; color:var(--gold); }
+  .score-bar-wrap { width:120px; height:4px; background:rgba(255,255,255,0.06); border-radius:2px; }
+  .score-bar { height:4px; border-radius:2px; background:var(--gold); transition:width 0.6s ease; }
+
+  /* flag submit */
+  .flag-submit { background:var(--mid); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:40px; }
+  .flag-row { display:flex; gap:10px; margin-top:12px; }
+  .flag-input { flex:1; background:var(--navy); border:1px solid var(--border); border-radius:6px; color:var(--white); font-family:'DM Mono',monospace; font-size:13px; padding:10px 16px; outline:none; }
+  .flag-input:focus { border-color:var(--gold); }
+  .flag-input::placeholder { color:var(--muted); }
+  .btn-submit { background:var(--gold); color:var(--navy); border:none; padding:10px 24px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .btn-submit:hover { background:var(--gold2); }
+  .flag-result { margin-top:10px; font-size:13px; font-family:'DM Mono',monospace; padding:10px 14px; border-radius:6px; display:none; }
+  .flag-result.show { display:block; }
+  .flag-result.ok  { background:rgba(62,207,142,0.1); color:var(--green); }
+  .flag-result.err { background:rgba(224,82,82,0.1);  color:var(--red); }
+
+  /* pulse dot */
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--red); animation:pulse 1.4s infinite; display:inline-block; margin-right:6px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* progress */
+  .progress-track { width:100%; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; margin-top:16px; }
+  .progress-fill { height:6px; border-radius:3px; background:linear-gradient(90deg, var(--green), var(--gold)); width:0%; transition:width 0.8s ease; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Operation Phantom Cart <span>CTF · Workshop Edition</span></div>
+  </div>
+  <div>
+    <div class="timer-label">Time remaining</div>
+    <div class="timer" id="timer">55:00</div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="op-label">Live operation</div>
+  <h1>AirNova has been breached.<br>Find every vulnerability.</h1>
+  <p class="hero-sub">You are the incident response team. Work through the challenges below to understand how the attack happened — and how to stop it.</p>
+  <div class="status-bar">
+    <div class="stat"><div class="stat-val" id="solved-count">0</div><div class="stat-lbl">Solved</div></div>
+    <div class="stat"><div class="stat-val" id="total-pts">0</div><div class="stat-lbl">Points</div></div>
+    <div class="stat"><div class="stat-val">8</div><div class="stat-lbl">Challenges</div></div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<div class="main">
+
+  <!-- FLAG SUBMIT -->
+  <div class="section-label">Submit a flag</div>
+  <div class="flag-submit">
+    <p style="font-size:13px;color:var(--muted)">Found a flag? Enter it below. Flags are in the format <code style="color:var(--gold);background:rgba(201,168,76,0.1);padding:1px 6px;border-radius:3px">FLAG{...}</code></p>
+    <div class="flag-row">
+      <input class="flag-input" id="flag-in" type="text" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+      <button class="btn-submit" onclick="submitFlag()">Submit</button>
+    </div>
+    <div class="flag-result" id="flag-result"></div>
+  </div>
+
+  <!-- BEGINNER CHALLENGES -->
+  <div class="section-label">Beginner track</div>
+  <div class="grid">
+
+    <a class="ch-card" href="beginner/challenge1-source-secrets/index.html" target="_blank" id="card-1">
+      <div class="ch-num">CH-01</div>
+      <div class="ch-title">Source Secrets</div>
+      <div class="ch-desc">Developers leave notes they shouldn't. Find what's hidden in the page source before it was supposed to go live.</div>
+      <div class="ch-footer"><span class="diff diff-b">Beginner</span><span class="pts">100 pts</span></div>
+    </a>
+
+    <a class="ch-card" href="beginner/challenge2-rogue-script/index.html" target="_blank" id="card-2">
+      <div class="ch-num">CH-02</div>
+      <div class="ch-title">The Rogue Script</div>
+      <div class="ch-desc">One of six scripts loaded by the payment page doesn't belong to AirNova. Find the lookalike domain — exactly how Magecart got in.</div>
+      <div class="ch-footer"><span class="diff diff-b">Beginner</span><span class="pts">150 pts</span></div>
+    </a>
+
+    <a class="ch-card" href="beginner/challenge3-decode-payload/index.html" target="_blank" id="card-3">
+      <div class="ch-num">CH-03</div>
+      <div class="ch-title">Decode the Payload</div>
+      <div class="ch-desc">An analyst intercepted an outgoing network request containing a base64-encoded blob. Decode it and identify what was stolen.</div>
+      <div class="ch-footer"><span class="diff diff-b">Beginner</span><span class="pts">150 pts</span></div>
+    </a>
+
+    <a class="ch-card" href="beginner/challenge4-reflected-xss/index.html" target="_blank" id="card-4">
+      <div class="ch-num">CH-04</div>
+      <div class="ch-title">Reflected XSS</div>
+      <div class="ch-desc">AirNova's search bar reflects user input back onto the page without sanitization. Craft a payload that executes JavaScript.</div>
+      <div class="ch-footer"><span class="diff diff-b">Beginner</span><span class="pts">200 pts</span></div>
+    </a>
+
+  </div>
+
+  <!-- INTERMEDIATE CHALLENGES -->
+  <div class="section-label">Intermediate track</div>
+  <div class="grid">
+
+    <a class="ch-card" href="intermediate/challenge5-idor/index.html" target="_blank" id="card-5">
+      <div class="ch-num">CH-05</div>
+      <div class="ch-title">IDOR: No Authorization</div>
+      <div class="ch-desc">Your booking confirmation URL contains an ID. The server never checks if you own that booking. Find the flag in booking #1038.</div>
+      <div class="ch-footer"><span class="diff diff-i">Intermediate</span><span class="pts">250 pts</span></div>
+    </a>
+
+    <a class="ch-card" href="intermediate/challenge6-stored-xss/index.html" target="_blank" id="card-6">
+      <div class="ch-num">CH-06</div>
+      <div class="ch-title">Stored XSS</div>
+      <div class="ch-desc">Flight reviews are rendered without sanitization. Inject a payload that persists in the "database" and fires for every visitor.</div>
+      <div class="ch-footer"><span class="diff diff-i">Intermediate</span><span class="pts">300 pts</span></div>
+    </a>
+
+    <a class="ch-card" href="intermediate/challenge7-csp-analysis/index.html" target="_blank" id="card-7">
+      <div class="ch-num">CH-07</div>
+      <div class="ch-title">CSP: The £20M Fix</div>
+      <div class="ch-desc">Analyse AirNova's HTTP response headers. Identify the misconfigurations and write the Content Security Policy that blocks Magecart.</div>
+      <div class="ch-footer"><span class="diff diff-i">Intermediate</span><span class="pts">300 pts</span></div>
+    </a>
+
+  </div>
+
+  <!-- ADVANCED CHALLENGES -->
+  <div class="section-label">Expert track</div>
+  <div class="grid">
+
+    <a class="ch-card" href="advanced/challenge8-skimmer-autopsy/index.html" target="_blank" id="card-8">
+      <div class="ch-num">CH-08</div>
+      <div class="ch-title">Skimmer Autopsy</div>
+      <div class="ch-desc">Read and analyse the recovered malware. Identify the C2 infrastructure, explain all three evasion techniques, and write the blocking CSP.</div>
+      <div class="ch-footer"><span class="diff diff-a">Expert</span><span class="pts">500 pts</span></div>
+    </a>
+
+  </div>
+
+  <!-- SCOREBOARD -->
+  <div class="section-label"><span class="live-dot"></span>Live scoreboard</div>
+  <div class="scoreboard" id="scoreboard">
+    <div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">No scores yet — be the first to submit a flag.</div>
+  </div>
+
+</div>
+
+<script>
+// ── FLAGS & POINTS ──────────────────────────────────────────────
+const FLAGS = {
+  'FLAG{y0u_r3ad_th3_s0urc3}':     { ch:1, pts:100,  title:'Source Secrets' },
+  'FLAG{supp1y_ch41n_0wn3d}':      { ch:2, pts:150,  title:'Rogue Script' },
+  'FLAG{b3st64_d3c0d3d}':          { ch:3, pts:150,  title:'Decode Payload' },
+  'FLAG{r3fl3ct3d_xss_4_l1f3}':    { ch:4, pts:200,  title:'Reflected XSS' },
+  'FLAG{1d0r_n0_4uthor1z4t10n_ch3ck}': { ch:5, pts:250, title:'IDOR' },
+  'FLAG{st0r3d_xss_p3rs1sts}':     { ch:6, pts:300,  title:'Stored XSS' },
+  'FLAG{csp_w0uld_h4v3_st0pp3d_1t}':{ ch:7, pts:300, title:'CSP Analysis' },
+  'FLAG{sk1mm3r_4ut0psy_c0mpl3t3}':{ ch:8, pts:500,  title:'Skimmer Autopsy' },
+  // Hidden bonus flag (in robots.txt or presentation metadata)
+  'FLAG{m4gc4rt_w4s_h3r3}':        { ch:0, pts:999,  title:'BONUS: Hidden Flag' },
+};
+
+const MAX_PTS = Object.values(FLAGS).reduce((a,f)=>a+f.pts,0);
+const solved = new Set();
+let totalPts = 0;
+
+function submitFlag() {
+  const raw  = document.getElementById('flag-in').value.trim();
+  const res  = document.getElementById('flag-result');
+
+  if (!raw) return;
+
+  if (solved.has(raw)) {
+    res.className='flag-result show err';
+    res.textContent = '! Already submitted: ' + raw;
+    return;
+  }
+
+  if (FLAGS[raw]) {
+    const f = FLAGS[raw];
+    solved.add(raw);
+    totalPts += f.pts;
+
+    res.className='flag-result show ok';
+    res.textContent = '✓ +' + f.pts + ' pts — ' + f.title + ' solved!';
+    document.getElementById('flag-in').value = '';
+
+    if (f.ch > 0) {
+      const card = document.getElementById('card-' + f.ch);
+      if (card) card.classList.add('solved');
+    }
+
+    updateStats();
+    addToScoreboard('You', totalPts);
+  } else {
+    res.className='flag-result show err';
+    res.textContent = '✗ Incorrect flag. Keep looking.';
+  }
+}
+
+function updateStats() {
+  document.getElementById('solved-count').textContent = solved.size;
+  document.getElementById('total-pts').textContent = totalPts;
+  const pct = Math.min(100, Math.round(totalPts / MAX_PTS * 100));
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// Simulated scoreboard entries for workshop realism
+const board = [
+  { name:'Red Team', pts:0 },
+  { name:'Blue Team', pts:0 },
+  { name:'You', pts:0 },
+];
+
+function addToScoreboard(name, pts) {
+  const entry = board.find(e => e.name === name);
+  if (entry) entry.pts = pts;
+  renderBoard();
+}
+
+function renderBoard() {
+  const sorted = [...board].sort((a,b)=>b.pts-a.pts);
+  const max = sorted[0]?.pts || 1;
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = sorted.map((e,i)=>`
+    <div class="score-row">
+      <span class="rank ${i===0?'rank-1':''}">${i+1}</span>
+      <span class="score-name">${e.name}</span>
+      <div class="score-bar-wrap"><div class="score-bar" style="width:${Math.round(e.pts/max*100)}%"></div></div>
+      <span class="score-pts">${e.pts} pts</span>
+    </div>`).join('');
+}
+renderBoard();
+
+// ── COUNTDOWN TIMER ─────────────────────────────────────────────
+// Default 55 minutes — adjust to your actual lab time
+let secs = 55 * 60;
+const timerEl = document.getElementById('timer');
+
+function tick() {
+  if (secs <= 0) { timerEl.textContent='00:00'; timerEl.style.color='var(--red)'; return; }
+  secs--;
+  const m = String(Math.floor(secs/60)).padStart(2,'0');
+  const s = String(secs%60).padStart(2,'0');
+  timerEl.textContent = m + ':' + s;
+  if (secs <= 300) timerEl.style.color='var(--red)';
+  else if (secs <= 600) timerEl.style.color='var(--gold)';
+}
+setInterval(tick, 1000);
+
+// Enter key on flag input
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('flag-in').addEventListener('keydown', e=>{
+    if (e.key==='Enter') submitFlag();
+  });
+  // Simulate other teams scoring during the lab
+  setTimeout(()=>{ board[0].pts=250; renderBoard(); }, 4*60*1000);
+  setTimeout(()=>{ board[1].pts=100; renderBoard(); }, 7*60*1000);
+  setTimeout(()=>{ board[0].pts=550; renderBoard(); }, 12*60*1000);
+  setTimeout(()=>{ board[1].pts=450; renderBoard(); }, 18*60*1000);
+});
+</script>
+
+</body>
+</html>

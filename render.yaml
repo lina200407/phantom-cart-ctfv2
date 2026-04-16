@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: phantom-cart-ctf
+    runtime: python
+    rootDir: ctf
+    buildCommand: echo "no build step needed"
+    startCommand: python3 server.py
+    envVars:
+      - key: ACCESS_CODE
+        value: phantom2026
+      - key: RATE_LIMIT
+        value: 90

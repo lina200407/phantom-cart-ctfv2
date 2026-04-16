@@ -1,0 +1,12 @@
+# AirNova CTF Server — robots.txt
+# This file tells search engines which pages not to index.
+
+User-agent: *
+Disallow: /admin/
+Disallow: /internal/
+Disallow: /api/v1/bookings/
+Disallow: /backup/
+
+# Hint: curious people always check robots.txt first.
+# FLAG{m4gc4rt_w4s_h3r3}
+# This flag is worth 999 points. If you found it, you think like an attacker.

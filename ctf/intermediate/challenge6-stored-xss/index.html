@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirNova — Flight Reviews</title>
+<style>
+  body { background:#0a0f1e; color:#f5f3ee; font-family:sans-serif; padding:40px; max-width:860px; margin:0 auto; }
+  h1 { color:#c9a84c; margin-bottom:6px; }
+  p { color:#8a95a8; line-height:1.7; }
+  .review-form { background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:24px; margin:24px 0; }
+  .review-form h2 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#c9a84c; margin-bottom:16px; }
+  input, textarea { width:100%; background:#0a0f1e; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#f5f3ee; font-family:sans-serif; font-size:14px; padding:10px 14px; outline:none; margin-bottom:12px; }
+  input:focus, textarea:focus { border-color:#c9a84c; }
+  textarea { min-height:90px; resize:vertical; }
+  button { background:#c9a84c; color:#0a0f1e; border:none; padding:10px 24px; border-radius:4px; font-weight:700; font-size:13px; cursor:pointer; }
+  .reviews { margin-top:8px; }
+  .review-card { background:#121929; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:18px 20px; margin-bottom:12px; }
+  .review-author { font-size:13px; font-weight:600; color:#c9a84c; margin-bottom:6px; }
+  .review-body { font-size:14px; color:#c0c8d8; line-height:1.6; }
+  .review-date { font-size:11px; color:#5a6478; margin-top:8px; }
+  .hint { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:20px 24px; font-size:13px; margin-top:24px; }
+  .hint p { font-size:13px; margin-top:8px; }
+  code { color:#c9a84c; background:rgba(201,168,76,0.1); padding:2px 6px; border-radius:3px; }
+  .diff-badge { display:inline-block; background:rgba(224,82,82,0.15); border:1px solid #e05252; color:#e05252; font-size:11px; padding:2px 8px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<h1>Challenge 6 — Stored XSS <span class="diff-badge">Intermediate</span></h1>
+<p>AirNova allows passengers to leave reviews for flights. Reviews are saved and shown to all visitors without sanitization. Unlike reflected XSS, stored XSS runs for <em>every user</em> who visits the page.</p>
+<div class="review-form">
+  <h2>Leave a review — Flight AN 447</h2>
+  <input type="text" id="author" placeholder="Your name" value="Workshop Participant" />
+  <textarea id="review-text" placeholder="Share your experience..."></textarea>
+  <button onclick="submitReview()">Post review</button>
+</div>
+<div class="reviews" id="reviews-container"></div>
+<div class="hint">
+  <strong style="color:#f5f3ee">Your mission</strong>
+  <p>Post a review containing a JavaScript payload. Try:</p>
+  <p><code>&lt;img src=x onerror="alert('Stored XSS!')"&gt;</code></p>
+  <p>Step up: make the payload steal the session cookie: <code>&lt;img src=x onerror="alert(document.cookie)"&gt;</code></p>
+  <p style="margin-top:10px;color:#5a6478">Key difference from reflected XSS: this payload persists and fires for every subsequent visitor — exactly how Magecart injected persistent payment skimmers.</p>
+</div>
+<script>
+const reviews = [
+  { author:'Nour Belkacem', text:'Great flight, very smooth. Crew was friendly.', date:'2 Apr 2026' },
+  { author:'Hamza Djebbar', text:'Departed on time, arrived early. Will book again.', date:'1 Apr 2026' },
+  { author:'Rania Messaoudi', text:'Good experience. Food could be better but service was excellent.', date:'31 Mar 2026' },
+];
+function renderReviews() {
+  const container = document.getElementById('reviews-container');
+  container.innerHTML = reviews.map(r =>
+    '<div class="review-card"><div class="review-author">' + r.author + '</div><div class="review-body">' + r.text + '</div><div class="review-date">' + r.date + '</div></div>'
+  ).join('');
+}
+function submitReview() {
+  const author = document.getElementById('author').value || 'Anonymous';
+  const text = document.getElementById('review-text').value;
+  if (!text.trim()) return;
+  reviews.unshift({ author, text, date:'Just now' });
+  document.getElementById('review-text').value = '';
+  renderReviews();
+  if (text.includes('<') && (text.includes('onerror') || text.includes('onload') || text.includes('script'))) {
+    setTimeout(() => {
+      const flag = document.createElement('div');
+      flag.style.cssText = 'background:rgba(62,207,142,0.1);border:1px solid #3ecf8e;border-radius:8px;padding:16px 20px;margin-top:12px;font-size:13px;color:#3ecf8e;font-family:monospace;';
+      flag.textContent = 'FLAG{st0r3d_xss_p3rs1sts} — Payload stored. Every visitor who loads this page will now execute your script.';
+      document.getElementById('reviews-container').prepend(flag);
+    }, 300);
+  }
+}
+renderReviews();
+</script>
+</body>
+</html>
